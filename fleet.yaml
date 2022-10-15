@@ -1,6 +1,6 @@
 namespace: fleet-mc-helm-external-example
 helm:
-  chart: https://github.com/alexandrev/helm-bwce
+  chart: https://github.com/alexandrev/helm-bwce/releases/tag/0.2.0#:~:text=3-,bwce%2D0.2.0.tgz
 targetCustomizations:
 - name: dev
   helm:
