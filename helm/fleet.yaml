@@ -2,7 +2,7 @@ namespace: fleet-mc-helm-external-example
 helm:
   chart: https://github.com/alexandrev/helm-bwce/releases/download/0.2.0/bwce-0.2.0.tgz
 targetCustomizations:
-- name: dev
+- name: local
   helm:
     values:
       # This is a YAML-formatted file.
