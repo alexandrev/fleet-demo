@@ -106,7 +106,7 @@ targetCustomizations:
 
   clusterSelector:
     matchLabels:
-      env: dev
+      env: local
 
 - name: test
   helm:
