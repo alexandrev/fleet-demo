@@ -1,5 +1,4 @@
-namespace: fleet-local
-defaultNamespace: default
+namespace: default
 helm:
   chart: https://github.com/alexandrev/helm-bwce/releases/download/0.2.0/bwce-0.2.0.tgz
   releaseName: ems-receiver
