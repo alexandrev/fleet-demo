@@ -1,4 +1,5 @@
 namespace: fleet-local
+defaultNamespace: default
 targetCustomizations:
 - name: local
 
