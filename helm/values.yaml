@@ -1,0 +1,111 @@
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  uid: 2001
+  fsGroup: 2001
+
+replicas: 1
+image: 
+  imageName: 552846087011.dkr.ecr.eu-west-2.amazonaws.com/tibco/bwce:2.5.2
+  pullPolicy: Always
+  imagePullSecrets: regcred
+
+
+labels: {}
+
+annotations: {}
+
+# define environment variables here as a map of key: value
+env:
+
+
+hashicorp:
+  inject:
+    enabled: true
+    role: internal-app
+    secrets:
+    - name: internal/data/database/config
+      path: secret-database-config.txt
+      template: |
+          {{- with secret "internal/data/database/config" -}}
+          postgresql://{{ .Data.data.username }}:{{ .Data.data.password }}@postgres:5432/wizard
+          {{- end -}}
+
+  enabled: true
+  url: http://vault:8200
+  path: /secret/test
+  auth: 
+    type: token
+    path: 
+    token: hvs.cvH5Coqh3QiWzD5rMzdbOiPu
+    roleId : 
+    secretId: 
+    username: 
+    password: 
+    cacert: 
+  namespace: 
+  kv:
+    version: 2
+
+serviceAccountName: internal-app
+
+# enable this flag to use knative serve to deploy the app
+istio: 
+  enable: true
+
+hpa:
+  enabled: true
+  minReplica: 1
+  maxReplica: 1
+  targetAverageUtilization: 80
+
+service:
+  enabled: true
+  type: ClusterIP
+  port: 8080
+  mainProcess: Main
+  annotations:
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 400m
+    memory: 512Mi
+probePath:
+  httpGet: /_ping
+  port: 7777
+livenessProbe:
+  initialDelaySeconds: 180
+  periodSeconds: 20
+  successThreshold: 1
+  timeoutSeconds: 1
+readinessProbe:
+  initialDelaySeconds: 0
+  periodSeconds: 20
+  successThreshold: 1
+  timeoutSeconds: 1
+
+bwce:
+  configmap:
+    enabled: false
+    internal: true 
+    properties:  aaa
+    name: bwce-configmap
+# if configmap false
+  log:
+    level: ERROR
+    format: "JSON"
+  jvm:
+    javaopts: "-Dsun.net.http.allowRestrictedHeaders=true -Dbw.engine.enable.memory.saving.mode=true"
+    javagcopts: "-XX:+UseShenandoahGC -XX:+UnlockExperimentalVMOptions -XX:ShenandoahUncommitDelay=1000 -XX:ShenandoahGuaranteedGCInterval=5000"
+  bwprofile: "Docker"
+  configprofile: "docker"
+  monitoring:
+    enabled: true    
+    mainProcess: public
+    labels: {}
+  opentracing:
+    enabled: true
+    javaopts: "-Dbw.engine.opentracing.enable=true"
