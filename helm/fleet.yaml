@@ -1,4 +1,4 @@
-namespace: fleet-mc-helm-external-example
+namespace: fleet-local
 helm:
   chart: https://github.com/alexandrev/helm-bwce/releases/download/0.2.0/bwce-0.2.0.tgz
 targetCustomizations:
@@ -10,7 +10,6 @@ targetCustomizations:
       securityContext:
         runAsUser: 2001
         fsGroup: 2001
-
       replicas: 1
       image: 
         imageName: 938784100097.dkr.ecr.eu-west-2.amazonaws.com/ems-sender:1.0.1
@@ -51,8 +50,6 @@ targetCustomizations:
         namespace: 
         kv:
           version: 2
-
-
       service:
         enabled: true
         type: ClusterIP
@@ -103,11 +100,7 @@ targetCustomizations:
         opentracing:
           enabled: true
           javaopts: "-Dbw.engine.opentracing.enable=true"
-
-  clusterSelector:
-    matchLabels:
-      env: local
-
+  clusterSelector: {}
 - name: test
   helm:
     values:
