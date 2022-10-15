@@ -1,0 +1,5 @@
+namespace: fleet-local
+targetCustomizations:
+- name: local
+
+  clusterSelector: {}
