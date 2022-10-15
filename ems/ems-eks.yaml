@@ -1,0 +1,136 @@
+# $Id: tibems-gke.yaml for Kubernetes 
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: emsserver
+  labels:
+    name: emsserver
+spec:
+  serviceName: emsserver
+  replicas: 1
+  selector:
+    matchLabels:
+      name: emsserver
+  template:
+     metadata:
+       labels:
+         name: emsserver
+       name: emsserver
+     spec:
+       initContainers:
+       - name: volume-mount-hack
+         image: busybox
+         command: ["sh", "-c", "chmod -R 777 /shared"]
+         volumeMounts:
+         - name: tibemsd-volume
+           mountPath: /shared
+       containers:
+       - name: tibemsd-container
+         image: 938784100097.dkr.ecr.eu-west-2.amazonaws.com/ems:8.5.1
+         imagePullPolicy: Always
+         env:
+         - name: EMS_NODE_NAME
+           valueFrom:
+             fieldRef:
+               fieldPath: spec.nodeName
+         - name: EMS_PUBLIC_PORT
+           value: "30722"
+         - name: EMS_SERVICE_NAME
+           value: emsserver
+         - name: EMS_PROBE_PORT
+           value: "7220"
+         args:
+         - tibemsd
+         livenessProbe:
+           httpGet:
+             path: /isLive
+             port: probe-tcp
+           initialDelaySeconds: 1
+           timeoutSeconds: 5
+           periodSeconds: 6
+         readinessProbe:
+           httpGet:
+             path: /isReady
+             port: probe-tcp
+           initialDelaySeconds: 1
+           timeoutSeconds: 5
+           periodSeconds: 6
+         ports:
+         - containerPort: 7222
+           name: tibemsd-tcp
+           protocol: TCP
+         - containerPort: 7220
+           name: probe-tcp
+           protocol: TCP
+         resources: {}
+         securityContext:
+           runAsUser: 1000
+         terminationMessagePath: /dev/termination-log
+         terminationMessagePolicy: File
+         volumeMounts:
+         - mountPath: /shared
+           name: tibemsd-volume
+       - name: tibemsd-stats
+         image: 938784100097.dkr.ecr.eu-west-2.amazonaws.com/ems-stats:latest
+         imagePullPolicy: Always         
+         resources: {}
+         ports:
+         - containerPort: 9091
+           name: tibemsd1-tcp
+           protocol: TCP
+         - containerPort: 9092
+           name: tibemsd2-tcp
+           protocol: TCP
+         - containerPort: 9093
+           name: tibemsd3-tcp
+           protocol: TCP
+         securityContext:
+           runAsUser: 1000
+         terminationMessagePath: /dev/termination-log
+         terminationMessagePolicy: File         
+  volumeClaimTemplates:
+  - metadata:
+      name: tibemsd-volume
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      storageClassName: ems-ssd
+      resources:
+       requests:
+          storage: 25Gi
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+   labels:
+     name: emsserver
+   name: emsserver
+spec:
+   type: NodePort
+   ports:
+   - name: tibemsd-port
+     nodePort: 30722
+     port: 30722 
+     protocol: TCP
+     targetPort: 7222
+   - name: tibemsd1-port
+     nodePort: 30991
+     port: 30991 
+     protocol: TCP
+     targetPort: 9091
+   - name: tibemsd2-port
+     nodePort: 30992
+     port: 30992 
+     protocol: TCP
+     targetPort: 9092
+   - name: tibemsd3-port
+     nodePort: 30993
+     port: 30993 
+     protocol: TCP
+     targetPort: 9093     
+   selector:
+     name: emsserver
+   sessionAffinity: None
+   externalTrafficPolicy: Cluster
