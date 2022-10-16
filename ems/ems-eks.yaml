@@ -90,7 +90,7 @@ spec:
          terminationMessagePolicy: File     
          volumeMounts:
          - mountPath: /log
-           name: tibemsd-volume2 
+           name: tibemsd-volume-stats 
   volumeClaimTemplates:
   - metadata:
       name: tibemsd-volume
