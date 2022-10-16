@@ -85,7 +85,7 @@ spec:
            name: tibemsd3-tcp
            protocol: TCP
          securityContext:
-           runAsUser: 1000
+           runAsUser: 0
          terminationMessagePath: /dev/termination-log
          terminationMessagePolicy: File     
          volumeMounts:
