@@ -1,0 +1,12 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name:  sm-emsserver
+spec:
+  selector:
+    matchLabels:
+      name: emsserver
+  endpoints:
+  - port: tibemsd3-port
+  - port: tibemsd2-port
+  - port: tibemsd1-port
