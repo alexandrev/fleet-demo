@@ -4,6 +4,7 @@ helm:
   releaseName: ems-sender
   valuesFiles:    
   - values.sender.yaml
+  - configmap.yaml
 targetCustomizations:
 - name: local
 

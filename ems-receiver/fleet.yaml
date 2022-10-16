@@ -4,6 +4,7 @@ helm:
   releaseName: ems-receiver
   valuesFiles:    
   - values.receiver.yaml
+  - configmap.yaml
 targetCustomizations:
 - name: local
 
