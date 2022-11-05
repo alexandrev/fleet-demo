@@ -1,0 +1,5 @@
+defaultNamespace: default
+targetCustomizations:
+- name: local
+
+  clusterSelector: {}
