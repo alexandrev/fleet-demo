@@ -1,4 +1,4 @@
-namespace: default
+namespace: default-2
 helm:
   chart: https://github.com/alexandrev/helmchart-mashery-test/releases/download/1.0/mashery_chart-0.1.0.tgz
   releaseName: mashery-qa
@@ -8,4 +8,19 @@ targetCustomizations:
 - name: local
 
   clusterSelector: {}
+- name: test
+  helm:
+    values:
+      replicas: 3
+  clusterSelector:
+    matchLabels:
+      env: test
 
+- name: prod
+  helm:
+    values:
+      serviceType: LoadBalancer
+      replicas: 3
+  clusterSelector:
+    matchLabels:
+      env: prod
