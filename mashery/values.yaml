@@ -1,0 +1,1030 @@
+global:
+    domain: detsandbox.com
+    apiVersion: apps/v1 
+    apiSvcVersion: v1
+    initImage: alpine/curl
+    imagePullSecrets: 
+      - name: tmgc-registry-key
+    lifecycle:
+      command: /usr/local/bin/tml-event-handler.sh
+    securityContext: 
+      runAsUser: 1001
+      fsGroup: 1001
+    volumes: 
+      - name: cluster-property-vol
+        secret:
+          secretName: cluster-property
+          defaultMode: 420
+      - name: zones-property-vol
+        secret:
+          secretName: zones-property
+          defaultMode: 420
+    ports:
+      - containerPort: 9080
+        name: agent-http
+      - containerPort: 9443
+        name: agent-https
+    env:
+      - name: TMG_RELEASE_VERSION
+        value: "5.5.2"
+      - name: TMG_RELEASE_SUFFIX
+        value: "GA"
+      - name: TMG_CLUSTER_NAME
+        value: "Local Edition Gateway Reference Cluster"
+      - name: TMG_CLUSTER_MODE
+        value: "untethered"
+      - name: TMG_ZONE_NAME
+        value: "local"
+      - name: TMG_ZONE_SERIAL
+        value: "0"
+      - name: TMG_ZONE_COUNT
+        value: "1"
+      - name: AGENT_HTTP_PORT
+        value: "9080"
+      - name: AGENT_HTTPS_PORT
+        value: "9443"
+  #values for cm
+cm: 
+    appName: cm-deploy-0
+    restartPolicy: Always
+    replicas: 1
+    annotations: 
+    ingress:
+      enabled: false
+      className: ""
+      annotations: 
+      hosts:
+        - host: chart-example.local
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+              fieldPath: test
+      hostAliases:
+          - ip: "127.0.0.1"
+            hostnames:
+            - val: "tm-api-v2-lb.detsandbox.com" 
+            - val: "api.detsandbox.com" 
+            - val: "platformapi.detsandbox.com"  
+            - val: "support.api.detsandbox.com"  
+            - val: "api-v2-reporting.detsandbox.com" 
+    ## The local-path value "soft" means that the scheduler should *prefer* to not schedule two replica pods onto the same node but no guarantee is provided.
+    ## The value "hard" means that the scheduler is *required* to not schedule two replica pods onto the same node.
+    ## The value "" will disable pod anti-affinity so that no anti-affinity rules will be configured.
+    podAntiAffinity: "soft"
+    ## If anti-affinity is enabled sets the topologyKey to use for anti-affinity.
+    podAntiAffinityTopologyKey: kubernetes.io/hostname
+    tolerations:
+    - key: "corp.det.gov.ae/esb.mashery"
+      operator: "Exists"
+      effect: "NoExecute"
+      tolerationSeconds: 6000
+    affinity:
+      nodeAffinity:
+    #    requiredDuringSchedulingIgnoredDuringExecution:
+    #      nodeSelectorTerms:8080
+    #      - matchExpressions:
+    #        - key: kubernetes.io/os
+    #          operator: NotIn
+    #          values:
+    #          - linux
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 1
+          preference:
+            matchExpressions:
+            - key: corp.det.gov.ae/esb.mashery
+              operator: In
+              values:
+              - "true"
+    ports:
+      - containerPort: 8080
+        name: cm-http
+      - containerPort: 8443
+        name: cm-https
+      - containerPort: 7080
+        name: api-http
+      - containerPort: 7443
+        name: api-https
+    containers:
+    - imageName: cm
+      image: harbor.corp.det.gov.ae/tibco.com/tml-cm:v5.5.2.GA.1
+      pullPolicy: IfNotPresent
+      lifecycle:
+        preStop:
+          exec:
+            command: 
+            - /usr/local/bin/tml-event-handler.sh
+            - preStop
+      securityContext:
+        runAsUser: 1001 
+      env:
+        - name: TMGC_TYPE
+          value: "configmanager"
+        - name: TMG_ZONE_NAMES
+          value: "local"
+        - name: TMGC_DS_COUNT
+          value: ""
+        - name: TMGC_OAUTH_COUNT
+          value: ""
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+      readinessProbe:
+        command:
+          - /usr/local/bin/tml-event-handler.sh
+          - isRegistryReady
+        failureThreshold: 5
+        initialDelaySeconds: 5
+        periodSeconds: 5
+        successThreshold: 1
+        timeoutSeconds: 10
+      volumeMounts:
+      - name: cm-resources-vol
+        mountPath: /opt/mashery/resources
+      - name: cm-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_cm_properties.json
+        subPath: tml_cm_properties.json
+      - name: cluster-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_cluster_properties.json
+        subPath: tml_cluster_properties.json
+      - name: zones-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_zones_properties.json
+        subPath: tml_zones_properties.json
+      - name: papi-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_papi_properties.json
+        subPath: tml_papi_properties.json
+      - name: cm-jks-vol
+        mountPath: /etc/mashery-server-ssl/tml-cm.jks
+        subPath: tml-cm.jks
+        readOnly: true
+      - name: cm-crt-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml-cm-crt.pem
+        subPath: tml-cm-crt.pem
+        readOnly: true
+      - name: cm-key-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml-cm-key.pk8
+        subPath: tml-cm-key.pk8
+        readOnly: true
+    volumes:
+      - name: cm-crt-vol
+        secret:
+          secretName: cm-crt
+      - name: cm-resources-vol
+        secret:
+          secretName: cm-resource
+          defaultMode: 420
+      - name: cm-property-vol
+        secret:
+          secretName: cm-property
+          defaultMode: 420
+      - name: cm-jks-vol
+        secret:
+          secretName: cm-jks
+          defaultMode: 420
+      - name: cm-key-vol
+        secret:
+          secretName: cm-key
+          defaultMode: 420
+  
+  #values for tm
+tm:
+    appName: tm-deploy-0
+    replicas: 1
+    restartPolicy: Always
+    ## The local-path value "soft" means that the scheduler should *prefer* to not schedule two replica pods onto the same node but no guarantee is provided.
+    ## The value "hard" means that the scheduler is *required* to not schedule two replica pods onto the same node.
+    ## The value "" will disable pod anti-affinity so that no anti-affinity rules will be configured.
+    podAntiAffinity: "soft"
+    ## If anti-affinity is enabled sets the topologyKey to use for anti-affinity.
+    podAntiAffinityTopologyKey: kubernetes.io/hostname
+    tolerations:
+    - key: "corp.det.gov.ae/esb.mashery"
+      operator: "Exists"
+      effect: "NoExecute"
+      tolerationSeconds: 6000
+    affinity:
+      nodeAffinity:
+    #    requiredDuringSchedulingIgnoredDuringExecution:
+    #      nodeSelectorTerms:
+    #      - matchExpressions:
+    #        - key: kubernetes.io/os
+    #          operator: NotIn
+    #          values:
+    #          - linux
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 1
+          preference:
+            matchExpressions:
+            - key: corp.det.gov.ae/esb.mashery
+              operator: In
+              values:
+              - "true"
+    containers:
+    - imageName: tm-svc-0
+      image: harbor.corp.det.gov.ae/tibco.com/tml-tm:v5.5.2.GA.1
+      imagePullPolicy: IfNotPresent
+      lifecycle:
+          preStop:
+            exec:
+              command: 
+              - /usr/local/bin/tml-event-handler.sh
+              - preStop
+      securityContext:
+        runAsUser: 1001 
+      ports:
+      - containerPort: 20080
+        name: tm-http
+      - containerPort: 20443
+        name: tm-https 
+      readinessProbe: 
+        httpGet:
+          path: /mashping
+          port: 20080
+        failureThreshold: 90
+        initialDelaySeconds: 120
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 5
+      env:
+        - name: TMGC_TYPE
+          value: "trafficmanager"  
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+      volumeMounts:
+      - name: tm-resources-vol
+        mountPath: /opt/mashery/resources
+      - name: tm-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_tm_properties.json
+        subPath: tml_tm_properties.json
+      - name: cluster-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_cluster_properties.json
+        subPath: tml_cluster_properties.json
+      - name: zones-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_zones_properties.json
+        subPath: tml_zones_properties.json
+      - name: tm-jks-vol
+        mountPath: /etc/mashery-server-ssl/tml-tm.jks
+        subPath: tml-tm.jks
+      - name: tm-trust-jks-vol
+        mountPath: /etc/mashery-server-ssl/tml-tm-trust.jks
+        subPath: tml-tm-trust.jks
+    volumes:
+      - name: tm-resources-vol
+        secret:
+          secretName: tm-resource
+          defaultMode: 420
+      - name: tm-property-vol
+        secret:
+          secretName: tm-property
+          defaultMode: 420
+      - name: tm-jks-vol
+        secret:
+          secretName: tm-jks
+          defaultMode: 420
+      - name: tm-trust-jks-vol
+        secret:
+          secretName: tm-trust-jks
+          defaultMode: 420 
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 80
+      targetMemoryUtilizationPercentage: 80
+  
+  #values for cachePod
+cache:
+    appName: cache-set-0
+    replicas: 1
+    podManagementPolicy: "Parallel"
+    app: "cache-svc"
+    terminationGracePeriodSeconds: 3
+    ## The local-path value "soft" means that the scheduler should *prefer* to not schedule two replica pods onto the same node but no guarantee is provided.
+    ## The value "hard" means that the scheduler is *required* to not schedule two replica pods onto the same node.
+    ## The value "" will disable pod anti-affinity so that no anti-affinity rules will be configured.
+    podAntiAffinity: "soft"
+    ## If anti-affinity is enabled sets the topologyKey to use for anti-affinity.
+    podAntiAffinityTopologyKey: kubernetes.io/hostname
+    tolerations:
+    - key: "corp.det.gov.ae/esb.mashery"
+      operator: "Exists"
+      effect: "NoExecute"
+      tolerationSeconds: 6000
+    affinity:
+      nodeAffinity:
+    #    requiredDuringSchedulingIgnoredDuringExecution:
+    #      nodeSelectorTerms:
+    #      - matchExpressions:
+    #        - key: kubernetes.io/os
+    #          operator: NotIn
+    #          values:
+    #          - linux
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 1
+          preference:
+            matchExpressions:
+            - key: corp.det.gov.ae/esb.mashery
+              operator: In
+              values:
+              - "true"
+    tolerations:
+    - key: "corp.det.gov.ae/esb.mashery"
+      operator: "Exists"
+      effect: "NoExecute"
+      tolerationSeconds: 6000
+    containers:
+    - name: cache-svc-0
+      image: harbor.corp.det.gov.ae/tibco.com/tml-cache:v5.5.2.GA.1
+      imagePullPolicy: IfNotPresent
+      securityContext:
+        runAsUser: 1001
+      ports:
+        - containerPort: 11211
+          name: memcached
+        - containerPort: 11212
+          name: count
+        - containerPort: 11213
+          name: content
+        - containerPort: 11214
+          name: services
+        - containerPort: 11215
+          name: packager
+        - containerPort: 11216
+          name: httpsclient
+      env:
+        - name: TMGC_TYPE
+          value: "cache"  
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+      volumeMounts:
+      - name: cache-resources-vol
+        mountPath: /opt/mashery/resources
+      - name: cachevol
+        mountPath: /mnt
+      - name: cache-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_cache_properties.json
+        subPath: tml_cache_properties.json
+      - name: cluster-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_cluster_properties.json
+        subPath: tml_cluster_properties.json
+      - name: zones-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_zones_properties.json
+        subPath: tml_zones_properties.json
+    volumes:
+    - name: cache-resources-vol
+      secret:
+        secretName: cache-resource
+        defaultMode: 420
+    - name: cache-property-vol
+      secret:
+        secretName: cache-property
+        defaultMode: 420     
+    volumeClaimTemplates:
+      - metadata:
+          name: cachevol
+        spec:
+          accessModes:  "ReadWriteOnce" 
+          storageClassName: "px-sc-tibco-rwo" 
+          resources:
+            requests:
+              storage: 2Gi
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 3
+      targetCPUUtilizationPercentage: 80
+      targetMemoryUtilizationPercentage: 80
+  
+  
+  #values for logPod
+log:
+    appName: log-set-0
+    replicas: 1
+    app: "log-svc"
+    terminationGracePeriodSeconds: 10
+    ## The local-path value "soft" means that the scheduler should *prefer* to not schedule two replica pods onto the same node but no guarantee is provided.
+    ## The value "hard" means that the scheduler is *required* to not schedule two replica pods onto the same node.
+    ## The value "" will disable pod anti-affinity so that no anti-affinity rules will be configured.
+    podAntiAffinity: "soft"
+    ## If anti-affinity is enabled sets the topologyKey to use for anti-affinity.
+    podAntiAffinityTopologyKey: kubernetes.io/hostname
+    tolerations:
+    - key: "corp.det.gov.ae/esb.mashery"
+      operator: "Exists"
+      effect: "NoExecute"
+      tolerationSeconds: 6000
+    affinity:
+      nodeAffinity:
+    #    requiredDuringSchedulingIgnoredDuringExecution:
+    #      nodeSelectorTerms:
+    #      - matchExpressions:
+    #        - key: kubernetes.io/os
+    #          operator: NotIn
+    #          values:
+    #          - linux
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 1
+          preference:
+            matchExpressions:
+            - key: corp.det.gov.ae/esb.mashery
+              operator: In
+              values:
+              - "true"
+    containers:
+      - name: log-svc-0
+        image: harbor.corp.det.gov.ae/tibco.com/tml-log:v5.5.2.GA.1
+        imagePullPolicy: IfNotPresent    
+        securityContext:
+          runAsUser: 1001 
+        ports:
+        - containerPort: 24224
+          name: log-port
+        - containerPort: 24220
+          name: dim-data-port
+        - containerPort: 24221
+          name: metrics-port
+        - containerPort: 24222
+          name: ctner-log-port
+        resources: {}
+        env:
+          - name: TMGC_TYPE
+            value: "logservice"
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+        volumeMounts:
+        - name: logvol
+          mountPath: /mnt
+        - name: log-property-vol
+          mountPath: /opt/mashery/containeragent/resources/properties/tml_log_properties.json
+          subPath: tml_log_properties.json
+        - name: log-resource-vol
+          mountPath: /opt/mashery/resources
+        - name: cluster-property-vol
+          mountPath: /opt/mashery/containeragent/resources/properties/tml_cluster_properties.json
+          subPath: tml_cluster_properties.json
+        - name: zones-property-vol
+          mountPath: /opt/mashery/containeragent/resources/properties/tml_zones_properties.json
+          subPath: tml_zones_properties.json
+    volumes:
+    - name: log-property-vol
+      secret:
+        secretName: log-property
+        defaultMode: 420
+    - name: log-resource-vol
+      secret:
+        secretName: log-resource
+        defaultMode: 420
+    volumeClaimTemplates:
+    - metadata:
+        name: logvol
+      spec:
+        accessModes:  "ReadWriteOnce" 
+        storageClassName: "px-sc-tibco-rwo"  
+        resources:
+          requests:
+            storage: 2Gi 
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 2
+      targetCPUUtilizationPercentage: 80
+      targetMemoryUtilizationPercentage: 80
+  
+nosql:
+    appName: cass-set-0
+    registry: cass-set-0-0
+    replicas: 1
+    app: "cass-svc"
+    terminationGracePeriodSeconds: 10   
+    ## The local-path value "soft" means that the scheduler should *prefer* to not schedule two replica pods onto the same node but no guarantee is provided.
+    ## The value "hard" means that the scheduler is *required* to not schedule two replica pods onto the same node.
+    ## The value "" will disable pod anti-affinity so that no anti-affinity rules will be configured.
+    podAntiAffinity: "soft"
+    ## If anti-affinity is enabled sets the topologyKey to use for anti-affinity.
+    podAntiAffinityTopologyKey: kubernetes.io/hostname
+    tolerations:
+    - key: "corp.det.gov.ae/esb.mashery"
+      operator: "Exists"
+      effect: "NoExecute"
+      tolerationSeconds: 6000
+    affinity:
+      nodeAffinity:
+    #    requiredDuringSchedulingIgnoredDuringExecution:
+    #      nodeSelectorTerms:
+    #      - matchExpressions:
+    #        - key: kubernetes.io/os
+    #          operator: NotIn
+    #          values:
+    #          - linux
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 1
+          preference:
+            matchExpressions:
+            - key: corp.det.gov.ae/esb.mashery
+              operator: In
+              values:
+              - "true"
+    cassReplicationFactor: 1
+    cassDcs: "dc1" 
+    cassRack: "rack1" 
+    cassDc: "dc1" 
+    cassMaxHeap: "512M" 
+    containers:
+      - name: cass-svc-0
+        image: harbor.corp.det.gov.ae/tibco.com/tml-nosql:v5.5.2.GA.1
+        imagePullPolicy: Always
+        securityContext:
+          runAsUser: 1001
+        ports:
+        - containerPort: 7000
+          name: intra-node
+        - containerPort: 7001
+          name: tls-intra-node
+        - containerPort: 7199
+          name: jmx
+        - containerPort: 9042
+          name: cql
+        resources: {}
+        lifecycle:
+          preStop:
+            exec:
+              command: 
+                - /bin/sh
+                - -c
+                - nodetool drain
+        env:
+          - name: TMGC_TYPE
+            value: "nosql"  
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: CASSANDRA_CLUSTER_NAME
+            value: "Local Edition Gateway Reference Cluster"
+        readinessProbe:
+          exec:
+            command:
+              - /bin/bash
+              - -c
+              - touch /usr/local/bin/nosql-ready-probe.sh
+          failureThreshold: 5
+          initialDelaySeconds: 15
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
+        volumeMounts:
+        - name: nosqlvol
+          mountPath: /var/lib/cassandra
+        - name: nosql-resources-vol
+          mountPath: /opt/mashery/resources
+        - name: nosql-property-vol
+          mountPath: /opt/mashery/containeragent/resources/properties/tml_nosql_properties.json
+          subPath: tml_nosql_properties.json
+        - name: cluster-property-vol
+          mountPath: /opt/mashery/containeragent/resources/properties/tml_cluster_properties.json
+          subPath: tml_cluster_properties.json
+        - name: zones-property-vol
+          mountPath: /opt/mashery/containeragent/resources/properties/tml_zones_properties.json
+          subPath: tml_zones_properties.json
+        - name: nosql-p12-vol
+          mountPath: /etc/cassandra/conf/tml-nosql.p12
+          subPath: tml-nosql.p12
+        - name: nosql-trust-p12-vol
+          mountPath: /etc/cassandra/conf/tml-nosql-trust.p12
+          subPath: tml-nosql-trust.p12
+    volumes:
+    - name: nosql-resources-vol
+      secret:
+        secretName: nosql-resource
+        defaultMode: 420
+    - name: nosql-property-vol
+      secret:
+        secretName: nosql-property
+    - name: nosql-p12-vol
+      secret:
+        secretName: nosql-p12
+    - name: nosql-trust-p12-vol
+      secret:
+        secretName: nosql-trust-p12
+    volumeClaimTemplates:
+    - metadata:
+        name: nosqlvol
+      spec:
+        accessModes:  "ReadWriteOnce" 
+        storageClassName: "px-sc-tibco-rwo"    
+        resources:
+          requests:
+            storage: 2Gi
+  
+  #values for reporting
+reporting:
+    enabled: true 
+    externalPrometheus: 
+      enabled: true
+      labels:
+        release: prometheus
+    appName: reporting-set-0
+    serviceName: reporting-svc-0
+    replicas: 1
+    podManagementPolicy: "Parallel"
+    app: "reporting-svc"
+    terminationGracePeriodSeconds: 10
+    containers:
+    - name: reporting-svc-0
+      image: harbor.corp.det.gov.ae/tibco.com/tml-reporting:v5.5.2.GA.1
+      imagePullPolicy: IfNotPresent
+      lifecycle:
+        preStop:
+          command:
+          - /usr/local/bin/tml-event-handler.sh
+          - preStop
+      ports:
+      - containerPort: 3000
+        name: grafana-http
+      - containerPort: 9000
+        name: report-port-1
+      - containerPort: 24224
+        name: report-port-2
+      - containerPort: 24225
+        name: report-port-3
+      - containerPort: 24226
+        name: report-port-4
+      - containerPort: 24227
+        name: report-port-5
+      - containerPort: 24231
+        name: prometheus
+      resources:
+        limits:
+          cpu: 100m
+        requests:
+          cpu: 100m
+      env:
+        - name: K8S_DEPLOY_NAMESPACE
+          value: "default"
+        - name: TMGC_TYPE 
+          value: "reportingservice"
+      volumeMounts:
+      - name: reportingvol
+        mountPath: /mnt
+      - name: reporting-resource-vol
+        mountPath: /opt/mashery/resources/tml-reporting
+      - name: fluentd-conf-vol
+        mountPath: /opt/mashery/resources/tml-reporting/fluentd/conf
+      - name: fluentd-plugin-vol
+        mountPath: /opt/mashery/resources/tml-reporting/fluentd/plugin
+      - name: grafana-resource-vol
+        mountPath: /opt/mashery/resources/tml-reporting/grafana
+      - name: grafana-user-dashboards-vol
+        mountPath: /opt/mashery/resources/tml-reporting/grafana/dashboards/CustomDashboards
+      - name: grafana-operations-vol
+        mountPath: /opt/mashery/resources/tml-reporting/grafana/dashboards/MasheryReporting/operations
+      - name: grafana-summary-vol
+        mountPath: /opt/mashery/resources/tml-reporting/grafana/dashboards/MasheryReporting/summary
+      - name: prometheus-resource-vol
+        mountPath: /opt/mashery/resources/tml-reporting/prometheus
+      - name: loki-resource-vol
+        mountPath: /opt/mashery/resources/tml-reporting/loki
+    volumes:
+    - name: reporting-resource-vol
+      secret:
+        secretName: reporting-resource
+        secretFileName: "resources/tml-reporting"
+        defaultMode: 420
+    - name: fluentd-conf-vol
+      secret:
+        secretName: fluentd-conf
+        secretFileName: "resources/tml-reporting/fluentd/conf"
+        defaultMode: 420
+    - name: fluentd-plugin-vol
+      secret:
+        secretName: fluentd-plugin
+        secretFileName: "resources/tml-reporting/fluentd/plugin"
+        defaultMode: 420
+    - name: grafana-resource-vol
+      secret:
+        secretName: grafana-resource
+        secretFileName: "resources/tml-reporting/grafana"
+        defaultMode: 420
+    - name: grafana-user-dashboards-vol
+      secret:
+        secretName: grafana-user-dashboards
+        secretFileName: "resources/tml-reporting/grafana/dashboards/CustomDashboards"
+        defaultMode: 420
+    - name: grafana-operations-vol
+      secret:
+        secretName: grafana-operations
+        secretFileName: "resources/tml-reporting/grafana/dashboards/MasheryReporting/operations"
+        defaultMode: 420
+    - name: grafana-summary-vol
+      secret:
+        secretName: grafana-summary
+        secretFileName: "resources/tml-reporting/grafana/dashboards/MasheryReporting/summary"
+        defaultMode: 420
+    - name: prometheus-resource-vol
+      secret:
+        secretName: prometheus-resource
+        secretFileName: "resources/tml-reporting/prometheus"
+        defaultMode: 420
+    - name: loki-resource-vol
+      secret:
+        secretName: loki-resource
+        secretFileName: "resources/tml-reporting/loki"
+        defaultMode: 420
+    volumeClaimTemplates:
+    - metadata:
+        name: reportingvol
+      spec:
+        accessModes: "ReadWriteOnce" 
+        storageClassName: "px-sc-tibco-rwo"  
+        resources:
+          requests:
+            storage: 2Gi
+  
+  #values for sqlPod
+sql:
+    appName: mysql-set-0
+    replicas: 1
+    app: "mysql-svc"
+    terminationGracePeriodSeconds: 10
+    ## The local-path value "soft" means that the scheduler should *prefer* to not schedule two replica pods onto the same node but no guarantee is provided.
+    ## The value "hard" means that the scheduler is *required* to not schedule two replica pods onto the same node.
+    ## The value "" will disable pod anti-affinity so that no anti-affinity rules will be configured.
+    podAntiAffinity: "soft"
+    ## If anti-affinity is enabled sets the topologyKey to use for anti-affinity.
+    podAntiAffinityTopologyKey: kubernetes.io/hostname
+    tolerations:
+    - key: "corp.det.gov.ae/esb.mashery"
+      operator: "Exists"
+      effect: "NoExecute"
+      tolerationSeconds: 6000
+    affinity:
+      nodeAffinity:
+    #    requiredDuringSchedulingIgnoredDuringExecution:
+    #      nodeSelectorTerms:
+    #      - matchExpressions:
+    #        - key: kubernetes.io/os
+    #          operator: NotIn
+    #          values:
+    #          - linux
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 1
+          preference:
+            matchExpressions:
+            - key: corp.det.gov.ae/esb.mashery
+              operator: In
+              values:
+              - "true"
+    containers:
+    - name: mysql-svc-0
+      image: harbor.corp.det.gov.ae/tibco.com/tml-sql:v5.5.2.GA.1
+      imagePullPolicy: IfNotPresent  
+      ports:
+      - containerPort: 3306
+        name: mysql-port
+      - containerPort: 33061
+        name: mysql-grp-repl
+      resources: {}
+      lifecycle:
+        preStop:
+          command:
+          - /usr/local/bin/tml-event-handler.sh
+          - preStop
+      securityContext:
+        runAsUser: 1001 
+      env:
+        - name: TMGC_TYPE
+          value: "sql"  
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: TMGC_API_HTTP_ENABLED
+          value: "true"
+        - name: TMGC_API_HTTPS_ENABLED
+          value: "true"
+      volumeMounts:
+      - name: sqlvol
+        mountPath: /var/lib/mysql
+      - name: sql-resources-vol
+        mountPath: /opt/mashery/resources
+      - name: sql-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_sql_properties.json
+        subPath: tml_sql_properties.json
+      - name: cluster-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_cluster_properties.json
+        subPath: tml_cluster_properties.json
+      - name: zones-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_zones_properties.json
+        subPath: tml_zones_properties.json
+      - name: papi-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_papi_properties.json
+        subPath: tml_papi_properties.json
+      readinessProbe:
+        exec:
+          command:
+            - /bin/bash
+            - -c
+            - touch /usr/local/bin/opl-ready-probe.sh
+        failureThreshold: 3
+        initialDelaySeconds: 30
+        periodSeconds: 5
+        successThreshold: 1
+        timeoutSeconds: 10
+    volumes:
+    - name: sql-resources-vol
+      secret:
+        secretName: sql-resource
+        defaultMode: 420
+    - name: sql-property-vol
+      secret:
+        secretName: sql-property
+        defaultMode: 420
+    volumeClaimTemplates: 
+    - metadata:
+        name: sqlvol
+      spec:
+        accessModes:  "ReadWriteOnce" 
+        storageClassName: "px-sc-tibco-rwo"  
+        resources:
+          requests:
+            storage: 2Gi
+  
+  #values for cmsvc0
+cmsvc:
+    metadata:
+      labels:
+        serviceName: cm-svc
+      name: cm-svc-0
+    spec:
+      type: ClusterIP
+      ports:
+      - name: "cm-http-port"
+        enabled: true 
+        port: 8080
+        protocol: TCP
+        targetPort: 8080
+      - name: "cm-https-port"
+        enabled: true
+        port: 8443
+        protocol: TCP
+        targetPort: 8443
+      - name: "api-http-port"
+        enabled: true 
+        port: 7080
+        protocol: TCP
+        targetPort: 7080
+      - name: "api-https-port"
+        enabled: true
+        port: 7443
+        protocol: TCP
+        targetPort: 7443
+      selector:
+        interface: cm-svc-0
+  
+  #values for cacheSvc0
+cacheSvc:
+    metadata:
+      labels:
+        app: cache-svc
+      name: cache-svc-0
+    spec:
+      clusterIP: None
+      ports:
+      - name: "memcached" 
+        port: 11211
+      - name: "count"
+        port: 11212
+      - name: "content"
+        port: 11213
+      - name: "services"
+        port: 11214
+      - name: "packager"
+        port: 11215
+      - name: "httpsclient"
+        port: 11216
+      selector:
+        interface: cache-svc-0
+
+  
+  #values for cassSvc0
+cassSvc:
+    metadata:
+      labels:
+        app: cass-svc
+      name: cass-svc-0
+    spec:
+      clusterIP: None
+      ports:
+      - port: 9042
+      selector:
+        interface: cass-svc-0
+
+  
+  #values for logSvc0
+logSvc:
+    metadata:
+      labels:
+        app: log-svc
+      name: log-svc-0
+    spec:
+      clusterIP: None
+      ports:
+      - name: "logport"
+        port: 24224
+      - name: "dimdataport"
+        port: 24220
+      - name: "metricsport"
+        port: 24221
+      - name: "containerlogsport"
+        port: 24222
+      selector:
+        interface: log-svc-0
+
+  
+  #values for mysqlSvc0
+mysqlSvc:
+    metadata:
+      labels:
+        app: mysql-svc
+      name: mysql-svc-0
+    spec:
+      clusterIP: None
+      ports:
+      - name: "mysql"
+        enabled: true
+        port: 3306
+      - name: "mysql-grp-repl"
+        enabled: true  
+        port: 33061 
+      selector:
+        interface: mysql-svc-0
+
+  
+  #values for reportingSvc
+reportingSvc:
+    metadata:
+      name: reporting-svc-0
+    spec:
+      clusterIP: None
+      ports:
+      - name: "grafana-http-port"
+        enabled: true 
+        port: 3000
+      selector:
+        interface: reporting-svc-0
+  
+
+  
+  #values for reportingSvcExternal
+reportingSvcExternal:
+    metadata:
+      name: reporting-app-0
+    spec:
+      type: ClusterIP
+      selector:
+        podName: reporting-set
+      ports:
+      - name: "grafana-http-port"
+        enabled: true
+        port: 3000
+        protocol: TCP
+        targetPort: 3000
+
+  
+  #values for tmSvc
+tmSvc:
+    metadata:
+      labels:
+        service: tm-svc
+      name: tm-svc
+    spec:
+      type: ClusterIP
+      ports:
+      - name: "http-port"
+        enabled: true
+        port: 80
+        protocol: TCP
+        targetPort: 80
+      - name: "https-port"
+        enabled: true
+        port: 443
+        protocol: TCP
+        targetPort: 443
+      - name: "oauth-port"
+        enabled: true
+        port: 8083
+        protocol: TCP
+        targetPort: 8083
+      - name: "mhttps_port"
+        enabled: false      
+        port: 1443
+        protocol: TCP
+        targetPort: 1443
+      selector:
+        service: tm-svc
