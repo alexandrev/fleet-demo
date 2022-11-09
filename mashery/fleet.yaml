@@ -8,20 +8,4 @@ targetCustomizations:
 - name: local
 
   clusterSelector: {}
-- name: test
-  helm:
-    values:
-      replicas: 3
-  clusterSelector:
-    matchLabels:
-      env: test
-
-- name: prod
-  helm:
-    values:
-      serviceType: LoadBalancer
-      replicas: 3
-  clusterSelector:
-    matchLabels:
-      env: prod
 
