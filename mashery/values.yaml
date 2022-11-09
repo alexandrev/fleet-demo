@@ -609,6 +609,29 @@ reporting:
     podManagementPolicy: "Parallel"
     app: "reporting-svc"
     terminationGracePeriodSeconds: 10
+    ## The local-path value "soft" means that the scheduler should *prefer* to not schedule two replica pods onto the same node but no guarantee is provided.
+    ## The value "hard" means that the scheduler is *required* to not schedule two replica pods onto the same node.
+    ## The value "" will disable pod anti-affinity so that no anti-affinity rules will be configured.
+    podAntiAffinity: ""
+    ## If anti-affinity is enabled sets the topologyKey to use for anti-affinity.
+    podAntiAffinityTopologyKey: kubernetes.io/hostname
+    affinity:
+    #  nodeAffinity:
+    #    requiredDuringSchedulingIgnoredDuringExecution:
+    #      nodeSelectorTerms:8080
+    #      - matchExpressions:
+    #        - key: kubernetes.io/os
+    #          operator: NotIn
+    #          values:
+    #          - linux
+    #    preferredDuringSchedulingIgnoredDuringExecution:
+    #    - weight: 1
+    #      preference:
+    #        matchExpressions:
+    #        - key: another-node-label-key
+    #          operator: NotIn
+    #          values:
+    #          - another-node-label-value
     containers:
     - name: reporting-svc-0
       image: 938784100097.dkr.ecr.eu-west-2.amazonaws.com/tibco/tml-reporting:v5.5.1.GA.1
