@@ -1,5 +1,5 @@
 global:
-    domain: detsandbox.com
+    domain: mashery.com
     apiVersion: apps/v1 
     apiSvcVersion: v1
     initImage: alpine/curl
@@ -49,10 +49,14 @@ cm:
     restartPolicy: Always
     replicas: 1
     annotations: 
+      a: b
+      c: d 
     ingress:
       enabled: false
       className: ""
       annotations: 
+        a: b
+        c: d 
       hosts:
         - host: chart-example.local
           paths:
@@ -62,24 +66,19 @@ cm:
       hostAliases:
           - ip: "127.0.0.1"
             hostnames:
-            - val: "tm-api-v2-lb.detsandbox.com" 
-            - val: "api.detsandbox.com" 
-            - val: "platformapi.detsandbox.com"  
-            - val: "support.api.detsandbox.com"  
-            - val: "api-v2-reporting.detsandbox.com" 
+            - val: "tm-api-v2-lb.mashery.com" 
+            - val: "api.mashery.com" 
+            - val: "platformapi.mashery.com"  
+            - val: "support.api.mashery.com"  
+            - val: "api-v2-reporting.mashery.com" 
     ## The local-path value "soft" means that the scheduler should *prefer* to not schedule two replica pods onto the same node but no guarantee is provided.
     ## The value "hard" means that the scheduler is *required* to not schedule two replica pods onto the same node.
     ## The value "" will disable pod anti-affinity so that no anti-affinity rules will be configured.
-    podAntiAffinity: "soft"
+    podAntiAffinity: ""
     ## If anti-affinity is enabled sets the topologyKey to use for anti-affinity.
     podAntiAffinityTopologyKey: kubernetes.io/hostname
-    tolerations:
-    - key: "corp.det.gov.ae/esb.mashery"
-      operator: "Exists"
-      effect: "NoExecute"
-      tolerationSeconds: 6000
     affinity:
-      nodeAffinity:
+    #  nodeAffinity:
     #    requiredDuringSchedulingIgnoredDuringExecution:
     #      nodeSelectorTerms:8080
     #      - matchExpressions:
@@ -87,14 +86,14 @@ cm:
     #          operator: NotIn
     #          values:
     #          - linux
-        preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 1
-          preference:
-            matchExpressions:
-            - key: corp.det.gov.ae/esb.mashery
-              operator: In
-              values:
-              - "true"
+    #    preferredDuringSchedulingIgnoredDuringExecution:
+    #    - weight: 1
+    #      preference:
+    #        matchExpressions:
+    #        - key: another-node-label-key
+    #          operator: NotIn
+    #          values:
+    #          - another-node-label-value
     ports:
       - containerPort: 8080
         name: cm-http
@@ -106,7 +105,7 @@ cm:
         name: api-https
     containers:
     - imageName: cm
-      image: harbor.corp.det.gov.ae/tibco.com/tml-cm:v5.5.2.GA.1
+      image: 938784100097.dkr.ecr.eu-west-2.amazonaws.com/tibco/tml-cm:v5.5.1.GA.1
       pullPolicy: IfNotPresent
       lifecycle:
         preStop:
@@ -194,16 +193,11 @@ tm:
     ## The local-path value "soft" means that the scheduler should *prefer* to not schedule two replica pods onto the same node but no guarantee is provided.
     ## The value "hard" means that the scheduler is *required* to not schedule two replica pods onto the same node.
     ## The value "" will disable pod anti-affinity so that no anti-affinity rules will be configured.
-    podAntiAffinity: "soft"
+    podAntiAffinity: ""
     ## If anti-affinity is enabled sets the topologyKey to use for anti-affinity.
     podAntiAffinityTopologyKey: kubernetes.io/hostname
-    tolerations:
-    - key: "corp.det.gov.ae/esb.mashery"
-      operator: "Exists"
-      effect: "NoExecute"
-      tolerationSeconds: 6000
     affinity:
-      nodeAffinity:
+    #  nodeAffinity:
     #    requiredDuringSchedulingIgnoredDuringExecution:
     #      nodeSelectorTerms:
     #      - matchExpressions:
@@ -211,17 +205,17 @@ tm:
     #          operator: NotIn
     #          values:
     #          - linux
-        preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 1
-          preference:
-            matchExpressions:
-            - key: corp.det.gov.ae/esb.mashery
-              operator: In
-              values:
-              - "true"
+    #    preferredDuringSchedulingIgnoredDuringExecution:
+    #    - weight: 1
+    #      preference:
+    #        matchExpressions:
+    #        - key: another-node-label-key
+    #          operator: NotIn
+    #          values:
+    #          - another-node-label-value
     containers:
     - imageName: tm-svc-0
-      image: harbor.corp.det.gov.ae/tibco.com/tml-tm:v5.5.2.GA.1
+      image: 938784100097.dkr.ecr.eu-west-2.amazonaws.com/tibco/tml-tm:v5.5.1.GA.1
       imagePullPolicy: IfNotPresent
       lifecycle:
           preStop:
@@ -288,9 +282,9 @@ tm:
           secretName: tm-trust-jks
           defaultMode: 420 
     autoscaling:
-      enabled: true
+      enabled: false
       minReplicas: 1
-      maxReplicas: 5
+      maxReplicas: 1
       targetCPUUtilizationPercentage: 80
       targetMemoryUtilizationPercentage: 80
   
@@ -304,16 +298,11 @@ cache:
     ## The local-path value "soft" means that the scheduler should *prefer* to not schedule two replica pods onto the same node but no guarantee is provided.
     ## The value "hard" means that the scheduler is *required* to not schedule two replica pods onto the same node.
     ## The value "" will disable pod anti-affinity so that no anti-affinity rules will be configured.
-    podAntiAffinity: "soft"
+    podAntiAffinity: ""
     ## If anti-affinity is enabled sets the topologyKey to use for anti-affinity.
     podAntiAffinityTopologyKey: kubernetes.io/hostname
-    tolerations:
-    - key: "corp.det.gov.ae/esb.mashery"
-      operator: "Exists"
-      effect: "NoExecute"
-      tolerationSeconds: 6000
     affinity:
-      nodeAffinity:
+    #  nodeAffinity:
     #    requiredDuringSchedulingIgnoredDuringExecution:
     #      nodeSelectorTerms:
     #      - matchExpressions:
@@ -321,22 +310,17 @@ cache:
     #          operator: NotIn
     #          values:
     #          - linux
-        preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 1
-          preference:
-            matchExpressions:
-            - key: corp.det.gov.ae/esb.mashery
-              operator: In
-              values:
-              - "true"
-    tolerations:
-    - key: "corp.det.gov.ae/esb.mashery"
-      operator: "Exists"
-      effect: "NoExecute"
-      tolerationSeconds: 6000
+    #    preferredDuringSchedulingIgnoredDuringExecution:
+    #    - weight: 1
+    #      preference:
+    #        matchExpressions:
+    #        - key: another-node-label-key
+    #          operator: NotIn
+    #          values:
+    #          - another-node-label-value
     containers:
     - name: cache-svc-0
-      image: harbor.corp.det.gov.ae/tibco.com/tml-cache:v5.5.2.GA.1
+      image: 938784100097.dkr.ecr.eu-west-2.amazonaws.com/tibco/tml-cache:v5.5.1.GA.1
       imagePullPolicy: IfNotPresent
       securityContext:
         runAsUser: 1001
@@ -388,14 +372,14 @@ cache:
           name: cachevol
         spec:
           accessModes:  "ReadWriteOnce" 
-          storageClassName: "px-sc-tibco-rwo" 
+          storageClassName: "gp2" 
           resources:
             requests:
               storage: 2Gi
     autoscaling:
-      enabled: true
+      enabled: false
       minReplicas: 1
-      maxReplicas: 3
+      maxReplicas: 1
       targetCPUUtilizationPercentage: 80
       targetMemoryUtilizationPercentage: 80
   
@@ -409,16 +393,11 @@ log:
     ## The local-path value "soft" means that the scheduler should *prefer* to not schedule two replica pods onto the same node but no guarantee is provided.
     ## The value "hard" means that the scheduler is *required* to not schedule two replica pods onto the same node.
     ## The value "" will disable pod anti-affinity so that no anti-affinity rules will be configured.
-    podAntiAffinity: "soft"
+    podAntiAffinity: ""
     ## If anti-affinity is enabled sets the topologyKey to use for anti-affinity.
     podAntiAffinityTopologyKey: kubernetes.io/hostname
-    tolerations:
-    - key: "corp.det.gov.ae/esb.mashery"
-      operator: "Exists"
-      effect: "NoExecute"
-      tolerationSeconds: 6000
     affinity:
-      nodeAffinity:
+    #  nodeAffinity:
     #    requiredDuringSchedulingIgnoredDuringExecution:
     #      nodeSelectorTerms:
     #      - matchExpressions:
@@ -426,17 +405,17 @@ log:
     #          operator: NotIn
     #          values:
     #          - linux
-        preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 1
-          preference:
-            matchExpressions:
-            - key: corp.det.gov.ae/esb.mashery
-              operator: In
-              values:
-              - "true"
+    #    preferredDuringSchedulingIgnoredDuringExecution:
+    #    - weight: 1
+    #      preference:
+    #        matchExpressions:
+    #        - key: another-node-label-key
+    #          operator: NotIn
+    #          values:hosts:
+    #          - another-node-label-value
     containers:
       - name: log-svc-0
-        image: harbor.corp.det.gov.ae/tibco.com/tml-log:v5.5.2.GA.1
+        image: 938784100097.dkr.ecr.eu-west-2.amazonaws.com/tibco/tml-log:v5.5.1.GA.1
         imagePullPolicy: IfNotPresent    
         securityContext:
           runAsUser: 1001 
@@ -485,14 +464,14 @@ log:
         name: logvol
       spec:
         accessModes:  "ReadWriteOnce" 
-        storageClassName: "px-sc-tibco-rwo"  
+        storageClassName: "gp2"  
         resources:
           requests:
             storage: 2Gi 
     autoscaling:
-      enabled: true
+      enabled: false
       minReplicas: 1
-      maxReplicas: 2
+      maxReplicas: 1
       targetCPUUtilizationPercentage: 80
       targetMemoryUtilizationPercentage: 80
   
@@ -505,16 +484,11 @@ nosql:
     ## The local-path value "soft" means that the scheduler should *prefer* to not schedule two replica pods onto the same node but no guarantee is provided.
     ## The value "hard" means that the scheduler is *required* to not schedule two replica pods onto the same node.
     ## The value "" will disable pod anti-affinity so that no anti-affinity rules will be configured.
-    podAntiAffinity: "soft"
+    podAntiAffinity: ""
     ## If anti-affinity is enabled sets the topologyKey to use for anti-affinity.
     podAntiAffinityTopologyKey: kubernetes.io/hostname
-    tolerations:
-    - key: "corp.det.gov.ae/esb.mashery"
-      operator: "Exists"
-      effect: "NoExecute"
-      tolerationSeconds: 6000
     affinity:
-      nodeAffinity:
+    #  nodeAffinity:
     #    requiredDuringSchedulingIgnoredDuringExecution:
     #      nodeSelectorTerms:
     #      - matchExpressions:
@@ -522,14 +496,14 @@ nosql:
     #          operator: NotIn
     #          values:
     #          - linux
-        preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 1
-          preference:
-            matchExpressions:
-            - key: corp.det.gov.ae/esb.mashery
-              operator: In
-              values:
-              - "true"
+    #    preferredDuringSchedulingIgnoredDuringExecution:
+    #    - weight: 1
+    #      preference:
+    #        matchExpressions:
+    #        - key: another-node-label-key
+    #          operator: NotIn
+    #          values:nosql:
+    #          - another-node-label-value
     cassReplicationFactor: 1
     cassDcs: "dc1" 
     cassRack: "rack1" 
@@ -537,7 +511,7 @@ nosql:
     cassMaxHeap: "512M" 
     containers:
       - name: cass-svc-0
-        image: harbor.corp.det.gov.ae/tibco.com/tml-nosql:v5.5.2.GA.1
+        image: 938784100097.dkr.ecr.eu-west-2.amazonaws.com/tibco/tml-nosql:v5.5.1.GA.1
         imagePullPolicy: Always
         securityContext:
           runAsUser: 1001
@@ -617,7 +591,7 @@ nosql:
         name: nosqlvol
       spec:
         accessModes:  "ReadWriteOnce" 
-        storageClassName: "px-sc-tibco-rwo"    
+        storageClassName: "gp2"  
         resources:
           requests:
             storage: 2Gi
@@ -637,7 +611,7 @@ reporting:
     terminationGracePeriodSeconds: 10
     containers:
     - name: reporting-svc-0
-      image: harbor.corp.det.gov.ae/tibco.com/tml-reporting:v5.5.2.GA.1
+      image: 938784100097.dkr.ecr.eu-west-2.amazonaws.com/tibco/tml-reporting:v5.5.1.GA.1
       imagePullPolicy: IfNotPresent
       lifecycle:
         preStop:
@@ -741,7 +715,7 @@ reporting:
         name: reportingvol
       spec:
         accessModes: "ReadWriteOnce" 
-        storageClassName: "px-sc-tibco-rwo"  
+        storageClassName: "gp2"  
         resources:
           requests:
             storage: 2Gi
@@ -755,16 +729,11 @@ sql:
     ## The local-path value "soft" means that the scheduler should *prefer* to not schedule two replica pods onto the same node but no guarantee is provided.
     ## The value "hard" means that the scheduler is *required* to not schedule two replica pods onto the same node.
     ## The value "" will disable pod anti-affinity so that no anti-affinity rules will be configured.
-    podAntiAffinity: "soft"
+    podAntiAffinity: ""
     ## If anti-affinity is enabled sets the topologyKey to use for anti-affinity.
     podAntiAffinityTopologyKey: kubernetes.io/hostname
-    tolerations:
-    - key: "corp.det.gov.ae/esb.mashery"
-      operator: "Exists"
-      effect: "NoExecute"
-      tolerationSeconds: 6000
     affinity:
-      nodeAffinity:
+    #  nodeAffinity:
     #    requiredDuringSchedulingIgnoredDuringExecution:
     #      nodeSelectorTerms:
     #      - matchExpressions:
@@ -772,17 +741,17 @@ sql:
     #          operator: NotIn
     #          values:
     #          - linux
-        preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 1
-          preference:
-            matchExpressions:
-            - key: corp.det.gov.ae/esb.mashery
-              operator: In
-              values:
-              - "true"
+    #    preferredDuringSchedulingIgnoredDuringExecution:
+    #    - weight: 1
+    #      preference:
+    #        matchExpressions:
+    #        - key: another-node-label-key
+    #          operator: NotIn
+    #          values:
+    #          - another-node-label-value
     containers:
     - name: mysql-svc-0
-      image: harbor.corp.det.gov.ae/tibco.com/tml-sql:v5.5.2.GA.1
+      image: 938784100097.dkr.ecr.eu-west-2.amazonaws.com/tibco/tml-sql:v5.5.1.GA.1
       imagePullPolicy: IfNotPresent  
       ports:
       - containerPort: 3306
@@ -850,7 +819,7 @@ sql:
         name: sqlvol
       spec:
         accessModes:  "ReadWriteOnce" 
-        storageClassName: "px-sc-tibco-rwo"  
+        storageClassName: "gp2"  
         resources:
           requests:
             storage: 2Gi
@@ -862,7 +831,7 @@ cmsvc:
         serviceName: cm-svc
       name: cm-svc-0
     spec:
-      type: ClusterIP
+      type: LoadBalancer
       ports:
       - name: "cm-http-port"
         enabled: true 
@@ -986,7 +955,7 @@ reportingSvcExternal:
     metadata:
       name: reporting-app-0
     spec:
-      type: ClusterIP
+      type: LoadBalancer
       selector:
         podName: reporting-set
       ports:
@@ -1004,7 +973,7 @@ tmSvc:
         service: tm-svc
       name: tm-svc
     spec:
-      type: ClusterIP
+      type: LoadBalancer
       ports:
       - name: "http-port"
         enabled: true
@@ -1028,3 +997,43 @@ tmSvc:
         targetPort: 1443
       selector:
         service: tm-svc
+  
+  #global storage values 
+globalstorage:
+      kind: StorageClass
+      apiVersion: storage.k8s.io/v1
+      provisioner: rancher.io/local-path
+      volumeBindingMode: WaitForFirstConsumer
+      
+  #values for sqlstorage 
+sqlstorage:
+    metadata:
+      name: sql-storage-class
+    data: 
+    #  {{ ( $.Files.Glob "set-storage-classes.sh") | indent 2 }}
+        
+  #values for logstorage
+logstorage:
+    metadata:
+      name: log-storage-class
+    data: 
+    #  {{ ( $.Files.Glob "set-storage-classes.sh") | indent 2 }}
+      
+  #values for nosqlstorage
+nosqlstorage:
+    metadata:
+      name: nosql-storage-class
+    data: 
+    #  {{ ( $.Files.Glob "set-storage-classes.sh") | indent 2 }}
+  #values for cachestorage
+cachestorage:
+    metadata:
+      name: cache-storage-class
+    data: 
+   #   {{ ( $.Files.Glob "set-storage-classes.sh") | indent 2 }}
+  #values for reportingstorage
+reportingstorage:
+    metadata:
+      name: reporting-storage-class
+    data:
+    #  {{ ( $.Files.Glob "set-storage-classes.sh") | indent 2 }}
