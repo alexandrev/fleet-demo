@@ -1,7 +1,7 @@
 namespace: default
 helm:
   chart: https://github.com/alexandrev/helmchart-mashery-test/releases/download/1.0/mashery_chart-0.1.0.tgz
-  releaseName: mashery
+  releaseName: mashery-test
   valuesFiles:    
   - values.yaml
 targetCustomizations:
